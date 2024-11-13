@@ -23,9 +23,9 @@ if __name__ == "__main__":
     experiment_name = f"experiment_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
     os.makedirs(f"images/{experiment_name}", exist_ok=True)
     os.makedirs(f"saved_models/{experiment_name}", exist_ok=True)
-    # log_dir = os.path.join("runs", experiment_name)
+    log_dir = os.path.join("logs", experiment_name)
     # Initialize TensorBoard writer
-    writer = SummaryWriter(log_dir=f"logs",filename_suffix=experiment_name)
+    writer = SummaryWriter(log_dir=log_dir)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--epoch", type=int, default=400, help="num of epoch")
