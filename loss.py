@@ -17,7 +17,7 @@ class ContentLoss(nn.Module):
         loss = F.mse_loss(SR_feature,HR_feature)
         loss_tv =self.tv_loss(SR_img)
         loss_image = self.mse_loss(SR_img,HR_img)
-        return (0.006* loss)+ loss_tv +loss_image
+        return 0.006* loss 
     
 class AdversarialLoss(nn.Module):
     def __init__(self):

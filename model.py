@@ -59,7 +59,7 @@ class SRGenerator(nn.Module):
         out = self.sub_pixel2(out)
         out = self.conv3(out)
         # out = self.activate(out)
-        return out
+        return (out+1)/2
 
 class Discriminator(nn.Module):
 

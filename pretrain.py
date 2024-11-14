@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--epoch", type=int, default=400, help="num of epoch")
-    parser.add_argument("--batch_size", type=int, default=4, help="size of the batches")
+    parser.add_argument("--batch_size", type=int, default=64, help="size of the batches")
     parser.add_argument("--lr", type=float, default=0.0001, help="learning rate")
     parser.add_argument("--hr_height", type=int, default=96, help="high res. image height")
     parser.add_argument("--hr_width", type=int, default=96, help="high res. image width")
@@ -58,10 +58,10 @@ if __name__ == "__main__":
 
     # Initialize generator and discriminator
     generator = SRGenerator()
-    discriminator = Discriminator()
+    # discriminator = Discriminator()
 
 
-    generator.load_state_dict(torch.load(r"D:\alvin\gan\saved_models\experiment_ori_2024-11-14_16-26-14/generator_70.pth"))
+    # generator.load_state_dict(torch.load("saved_models/generator_50.pth"))
 
     # Losses
     criterion_mse = nn.MSELoss()
@@ -71,22 +71,27 @@ if __name__ == "__main__":
 
     if cuda:
         generator = generator.cuda()
-        discriminator = discriminator.cuda()    
+        # discriminator = discriminator.cuda()    
         criterion_adv = criterion_adv.cuda()
         criterion_content = criterion_content.cuda()
 
     # Optimizers
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr)
-    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr)
+    # optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr)
 
     # ---------- Training ----------
     for epoch in range(args.epoch):
         train_bar = tqdm(dataloader)
         running_results = {'batch_sizes': 0, 'd_loss': 0, 'g_loss': 0, 'd(X)': 0, 'dg(x1)': 0, 'dg(x2)':0}
+        # if epoch == 100:
+        #     discriminator = Discriminator()
+        #     # discriminator = discriminator.cuda()
+        #     optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr)
+    
 
 
         generator.train()
-        discriminator.train()
+        # discriminator.train()
 
         for i, imgs in enumerate(train_bar):
 
@@ -105,85 +110,88 @@ if __name__ == "__main__":
             # # Generate high resolution image from low resolution input
             gen_hr = generator(imgs_lr)
 
+            # if epoch < 100 :
+            loss_G = F.mse_loss(gen_hr,imgs_hr)
+            
+            # else:
 
+            # # Adversarial loss
+            #     fake_probs = discriminator(gen_hr)
+            #     loss_GAN = criterion_adv(fake_probs)
 
-        # Adversarial loss
-            fake_probs = discriminator(gen_hr)
-            loss_GAN = criterion_adv(fake_probs)
+            #     # Content loss
+            #     loss_content = criterion_content(gen_hr, imgs_hr)
 
-            # Content loss
-            loss_content = criterion_content(gen_hr, imgs_hr)
-
-            # Total loss for generator
-            loss_G = loss_content + 1e-3 * loss_GAN
-            # loss_G = F.mse_loss(gen_hr,imgs_hr)
+            #     # Total loss for generator
+            #     loss_G = loss_content + 1e-3 * loss_GAN
+            # # loss_G = F.mse_loss(gen_hr,imgs_hr)
 
             loss_G.backward()
             optimizer_G.step()
-            # ----------------- Train Discriminator -----------------
+        #      # ----------------- Train Discriminator -----------------
             
-                # Real images
-            real_probs = discriminator(imgs_hr)
-            loss_real = criterion_BCE(real_probs, real_label)
-            D_x = real_probs.mean().item()
+        #         # Real images
+        #     real_probs = discriminator(imgs_hr)
+        #     loss_real = criterion_BCE(real_probs, real_label)
+        #     D_x = real_probs.mean().item()
             
-            # Fake images
-            fake_probs = discriminator(gen_hr.detach())
-            loss_fake = criterion_BCE(fake_probs, fake_label)
-            D_G_x1 = fake_probs.mean().item()
+        #     # Fake images
+        #     fake_probs = discriminator(gen_hr.detach())
+        #     loss_fake = criterion_BCE(fake_probs, fake_label)
+        #     D_G_x1 = fake_probs.mean().item()
             
-            # Combined loss
-            loss_D = loss_real+loss_fake
+        #     # Combined loss
+        #     loss_D = loss_real+loss_fake
             
 
-            optimizer_D.zero_grad()
-            loss_D.backward()
-            optimizer_D.step()
+        #     optimizer_D.zero_grad()
+        #     loss_D.backward()
+        #     optimizer_D.step()
             
-            D_G_x2 = fake_probs.mean().item()
-            save_image(imgs_lr, f"images/lr/{epoch}.png" , normalize=False)
+        #     D_G_x2 = fake_probs.mean().item()
+        #     save_image(imgs_lr, f"images/lr/{epoch}.png" , normalize=False)
 
 
 
 
-            # -------------- Log Progress Every Iteration --------------
-            running_results['g_loss'] += loss_G.item() *batch_size
-            running_results['d_loss'] += loss_D.item() *batch_size
-            running_results['d(X)'] += D_x *batch_size
-            running_results['dg(x1)'] += D_G_x1 *batch_size
-            running_results['dg(x2)'] += D_G_x2 *batch_size
+        #     # -------------- Log Progress Every Iteration --------------
+        #     running_results['g_loss'] += loss_G.item() *batch_size
+        #     running_results['d_loss'] += loss_D.item() *batch_size
+        #     running_results['d(X)'] += D_x *batch_size
+        #     running_results['dg(x1)'] += D_G_x1 *batch_size
+        #     running_results['dg(x2)'] += D_G_x2 *batch_size
 
 
-            # Log scalar values to TensorBoard at each iteration
-            writer.add_scalar('Loss/Generator', loss_G.item(), epoch * len(dataloader) + i)
-            writer.add_scalar('Loss/Discriminator', loss_D.item(), epoch * len(dataloader) + i)
-            writer.add_scalar('D(x)', D_x, epoch * len(dataloader) + i)
-            writer.add_scalar('D(G(z))', D_G_x2, epoch * len(dataloader) + i)
+        #     # Log scalar values to TensorBoard at each iteration
+        #     writer.add_scalar('Loss/Generator', loss_G.item(), epoch * len(dataloader) + i)
+        #     writer.add_scalar('Loss/Discriminator', loss_D.item(), epoch * len(dataloader) + i)
+        #     writer.add_scalar('D(x)', D_x, epoch * len(dataloader) + i)
+        #     writer.add_scalar('D(G(z))', D_G_x2, epoch * len(dataloader) + i)
 
-            train_bar.set_description(desc='[%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f' % (
-                epoch, args.epoch, running_results['d_loss'] / running_results['batch_sizes'],
-                running_results['g_loss'] / running_results['batch_sizes'],
-                running_results['d(X)'] / running_results['batch_sizes'],
-                running_results['dg(x1)'] / running_results['batch_sizes'],
-                running_results['dg(x2)'] / running_results['batch_sizes'] ))
+        #     train_bar.set_description(desc='[%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f' % (
+        #         epoch, args.epoch, running_results['d_loss'] / running_results['batch_sizes'],
+        #         running_results['g_loss'] / running_results['batch_sizes'],
+        #         running_results['d(X)'] / running_results['batch_sizes'],
+        #         running_results['dg(x1)'] / running_results['batch_sizes'],
+        #         running_results['dg(x2)'] / running_results['batch_sizes'] ))
 
         os.makedirs(f"images/{experiment_name}", exist_ok=True)
         os.makedirs(f"saved_models/{experiment_name}", exist_ok=True)
-        # -------- Log After Every Epoch --------
-        avg_d_loss = running_results['d_loss'] / running_results['batch_sizes']
-        avg_g_loss = running_results['g_loss'] / running_results['batch_sizes']
-        avg_d_score = running_results['d(X)'] / running_results['batch_sizes']
-        avg_g_score = running_results['dg(x2)'] / running_results['batch_sizes']
+        # # -------- Log After Every Epoch --------
+        # avg_d_loss = running_results['d_loss'] / running_results['batch_sizes']
+        # avg_g_loss = running_results['g_loss'] / running_results['batch_sizes']
+        # avg_d_score = running_results['d(X)'] / running_results['batch_sizes']
+        # avg_g_score = running_results['dg(x2)'] / running_results['batch_sizes']
 
-        # Log scalar values at the end of the epoch
-        writer.add_scalar('Loss/Generator_Epoch', avg_g_loss, epoch)
-        writer.add_scalar('Loss/Discriminator_Epoch', avg_d_loss, epoch)
-        writer.add_scalar('D(x)_Epoch', avg_d_score, epoch)
-        writer.add_scalar('D(G(z))_Epoch', avg_g_score, epoch)
+        # # Log scalar values at the end of the epoch
+        # writer.add_scalar('Loss/Generator_Epoch', avg_g_loss, epoch)
+        # writer.add_scalar('Loss/Discriminator_Epoch', avg_d_loss, epoch)
+        # writer.add_scalar('D(x)_Epoch', avg_d_score, epoch)
+        # writer.add_scalar('D(G(z))_Epoch', avg_g_score, epoch)
         
-        # image_grids = []
-        idx = 0
-        torch.cuda.empty_cache()  # Clear any cached memory
+        # # image_grids = []
+        # idx = 0
+        # torch.cuda.empty_cache()  # Clear any cached memory
 
         # Testing phase
         with torch.no_grad():  # D
@@ -202,7 +210,7 @@ if __name__ == "__main__":
                 img_grid = torch.cat((imgs_lr_grid, gen_hr_grid, img_hr_grid), dim=-1)
 
 
-                save_image(img_grid, f"images/{experiment_name}/{epoch}.png", normalize=False)
+                # save_image(img_grid, f"images/{experiment_name}/{epoch}.png", normalize=False)
                 writer.add_image('Generated Images', img_grid, epoch)
                 break
 
@@ -210,7 +218,7 @@ if __name__ == "__main__":
         # Save model checkpoints every 10 epochs
         if epoch % 10 == 0 or epoch == args.epoch-1:
             torch.save(generator.state_dict(), f"saved_models/{experiment_name}/generator_{epoch}.pth")
-            torch.save(discriminator.state_dict(), f"saved_models/{experiment_name}/discriminator_{epoch}.pth")
+            # torch.save(discriminator.state_dict(), f"saved_models/{experiment_name}/discriminator_{epoch}.pth")
 
     # Close the writer
     writer.close()
